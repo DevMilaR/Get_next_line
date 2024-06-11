@@ -1,84 +1,101 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: lromano <lromano@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/06/11 16:21:10 by lromano           #+#    #+#             */
+/*   Updated: 2024/06/11 16:28:06 by lromano          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "get_next_line.h"
 
-char	*leftover(char *storage)
+char	*ft_free(char **str)
 {
-	char	*leftover;
-	int		j;
-	int		i;
-
-	i = 0;
-	j = 0;
-	while (storage[i] != '\0' && storage[i] != '\n')
-		i++;
-	if (!storage[i])
-	{
-		free (storage);
-		return (NULL);
-	}
-	leftover = malloc(sizeof(char) * (ft_strlen(storage) - i + 1));
-	if (!leftover)
-		return (NULL);
-	i++;
-	while (storage[i])
-	{
-		leftover[j++] = storage[i++];
-	}
-	leftover[j] = '\0'; 
-	free(storage);   
-	return (leftover);  
+	free(*str);
+	*str = NULL;
+	return (NULL);
 }
-char	*create_line(char *storage)
+
+char	*clean_storage(char *storage)
+{
+	char	*new_storage;
+	char	*ptr;
+	int		len;
+
+	ptr = ft_strchr(storage, '\n');
+	if (!ptr)
+	{
+		new_storage = NULL;
+		return (ft_free(&storage));
+	}
+	else
+		len = (ptr - storage) + 1;
+	if (!storage[len])
+		return (ft_free(&storage));
+	new_storage = ft_substr(storage, len, ft_strlen(storage) - len);
+	ft_free(&storage);
+	if (!new_storage)
+		return (NULL);
+	return (new_storage);
+}
+
+char	*new_line(char *storage)
 {
 	char	*line;
-	int		i;
+	char	*ptr;
+	int		len;
 
-	i = 0;
-	if (!storage[0])
-		return (NULL);
-	while (storage[i] && storage[i] != '\n')
-		i++;
-	line = malloc(sizeof(char) * (i + 2));
+	ptr = ft_strchr(storage, '\n');
+	len = (ptr - storage) + 1;
+	line = ft_substr(storage, 0, len);
 	if (!line)
 		return (NULL);
-	i = 0;
-	while (storage[i] && storage[i] != '\n')
+	return (line);
+}
+
+char	*readbuf(int fd, char *storage)
+{
+	int		peruse;
+	char	*buffer;
+
+	peruse = 1;
+	buffer = malloc((BUFFER_SIZE + 1) * sizeof(char));
+	if (!buffer)
+		return (ft_free(&storage));
+	buffer[0] = '\0';
+	while (peruse > 0 && !ft_strchr(buffer, '\n'))
 	{
-		line[i] = storage[i];
-		i++;
+		peruse = read (fd, buffer, BUFFER_SIZE);
+		if (peruse > 0)
+		{
+			buffer[peruse] = '\0';
+			storage = ft_strjoin(storage, buffer);
+		}
 	}
-	if (storage[i] == '\n')
-	{
-		line[i] = storage[i];
-		i++;
-	}
-	line[i] = '\0';  
-	return (line);  
+	free(buffer);
+	if (peruse == -1)
+		return (ft_free(&storage));
+	return (storage);
 }
 
 char	*get_next_line(int fd)
 {
-	static char	*storage;
-	char		buffer[BUFFER_SIZE +1];
-	int			readbytes;
+	static char	*storage = {0};
 	char		*line;
 
-	if (fd < 0 || BUFFER_SIZE <= 0)
+	if (fd < 0)
 		return (NULL);
-	readbytes = 1;
-	while (!ft_strchr(storage, '\n') && readbytes > 0)
-	{
-		readbytes = read(fd, buffer, BUFFER_SIZE);
-		if (readbytes == -1)
-			return (NULL);
-		buffer[readbytes] = '\0';
-		storage = ft_strjoin(storage, buffer);
-	}
-	if (readbytes == -1)
-		free (storage);
+	if ((storage && !ft_strchr(storage, '\n')) || !storage)
+		storage = readbuf (fd, storage);
 	if (!storage)
 		return (NULL);
-	line = create_line(storage);
-	storage = leftover(storage);
+	line = new_line(storage);
+	if (!line)
+		return (ft_free(&storage));
+	storage = clean_storage(storage);
 	return (line);
 }
 
