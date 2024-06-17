@@ -19,30 +19,30 @@ char	*ft_free(char **str)
 	return (NULL);
 }
 
-char	*clean_storage(char *storage)
+char	*leftover(char *storage)
 {
-	char	*new_storage;
+	char	*leftover;
 	char	*ptr;
 	int		len;
 
 	ptr = ft_strchr(storage, '\n');
 	if (!ptr)
 	{
-		new_storage = NULL;
+		leftover = NULL;
 		return (ft_free(&storage));
 	}
 	else
 		len = (ptr - storage) + 1;
 	if (!storage[len])
 		return (ft_free(&storage));
-	new_storage = ft_substr(storage, len, ft_strlen(storage) - len);
+	leftover = ft_substr(storage, len, ft_strlen(storage) - len);
 	ft_free(&storage);
-	if (!new_storage)
+	if (!leftover)
 		return (NULL);
-	return (new_storage);
+	return (leftover);
 }
 
-char	*new_line(char *storage)
+char	*create_line(char *storage)
 {
 	char	*line;
 	char	*ptr;
@@ -58,25 +58,25 @@ char	*new_line(char *storage)
 
 char	*readbuf(int fd, char *storage)
 {
-	int		peruse;
+	int		readbytes;
 	char	*buffer;
 
-	peruse = 1;
+	readbytes = 1;
 	buffer = malloc((BUFFER_SIZE + 1) * sizeof(char));
 	if (!buffer)
 		return (ft_free(&storage));
 	buffer[0] = '\0';
-	while (peruse > 0 && !ft_strchr(buffer, '\n'))
+	while (readbytes > 0 && !ft_strchr(buffer, '\n'))
 	{
-		peruse = read (fd, buffer, BUFFER_SIZE);
-		if (peruse > 0)
+		readbytes = read (fd, buffer, BUFFER_SIZE);
+		if (readbytes > 0)
 		{
-			buffer[peruse] = '\0';
+			buffer[readbytes] = '\0';
 			storage = ft_strjoin(storage, buffer);
 		}
 	}
 	free(buffer);
-	if (peruse == -1)
+	if (readbytes == -1)
 		return (ft_free(&storage));
 	return (storage);
 }
@@ -92,10 +92,10 @@ char	*get_next_line(int fd)
 		storage = readbuf (fd, storage);
 	if (!storage)
 		return (NULL);
-	line = new_line(storage);
+	line = create_line(storage);
 	if (!line)
 		return (ft_free(&storage));
-	storage = clean_storage(storage);
+	storage = leftover(storage);
 	return (line);
 }
 
